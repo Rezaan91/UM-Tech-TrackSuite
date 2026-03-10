@@ -7,7 +7,7 @@ import jwt
 import hashlib
 import uuid
 from datetime import datetime, timedelta
-from database import db
+from .database import db
 
 app = FastAPI(title="UM Tech TrackSuite API", version="1.0.0")
 
