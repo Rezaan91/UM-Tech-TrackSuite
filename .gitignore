@@ -1,29 +1,43 @@
-# Python
+# ── Python ────────────────────────────────────────────────────────────────────
 __pycache__/
 *.py[cod]
-*.pyo
-
-# Virtual environments
+*$py.class
+*.so
+.Python
 .venv/
 venv/
+env/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+*.db          # local SQLite — never commit real data
+*.db-shm
+*.db-wal
 
-# Editor directories
-.vscode/
-.idea/
+# ── Node ──────────────────────────────────────────────────────────────────────
+node_modules/
+frontend/dist/
+frontend/.vercel/
+*.local
 
-# OS files
+# ── Secrets — NEVER commit these ─────────────────────────────────────────────
+.env
+.env.local
+.env.production
+backend/.env
+frontend/.env
+
+# ── OS / Editor ───────────────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
 
-# Node
-node_modules/
-
-# Environment files
-.env
-*.env
-
-# Logs
-*.log
-
-# pytest
-.pytest_cache/
+# ── Render / Vercel ───────────────────────────────────────────────────────────
+.vercel/

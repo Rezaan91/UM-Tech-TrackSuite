@@ -1,0 +1,123 @@
+name: PR Preview
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+env:
+  NODE_VERSION: "20"
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  smoke-test:
+    name: 🔎 Smoke Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 🐍 Backend smoke test
+        working-directory: backend
+        env:
+          DATABASE_URL: "sqlite:///:memory:"
+          SECRET_KEY: "ci-smoke-test"
+          ALLOWED_ORIGINS: "http://localhost:5173"
+        run: |
+          pip install -r requirements.txt -q
+          python -c "
+          from database import Base, engine, init_db
+          Base.metadata.create_all(bind=engine)
+          print('✅ DB models OK')
+          from main import app, analyze_device
+          print('✅ FastAPI app imports OK')
+          "
+
+      - name: ⚛️ Frontend smoke test
+        working-directory: frontend
+        run: |
+          npm ci --silent
+          npm run build
+          echo "✅ Vite build OK"
+          ls dist/
+
+  preview-deploy:
+    name: 🔍 Firebase Preview
+    runs-on: ubuntu-latest
+    needs: smoke-test
+    environment:
+      name: preview
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: npm install -g firebase-tools
+
+      - name: 🚀 Deploy preview
+        id: deploy
+        env:
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/firebase-sa.json
+        run: |
+          echo "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/firebase-sa.json"
+          cd frontend
+
+          npm ci --silent
+          VITE_API_BASE=${{ secrets.VITE_API_BASE }} npm run build
+
+          DEPLOY_RESULT=$(firebase hosting:channel:deploy "pr-${{ github.event.number }}" \
+            --project "$FIREBASE_PROJECT_ID" \
+            --expires 7d \
+            --non-interactive \
+            --json)
+
+          URL=$(python3 -c "import json,sys; data=json.loads(sys.stdin.read() or '{}'); print(next((i.get('url') for i in data.get('result', []) if isinstance(i, dict) and i.get('url')), ''))" <<< "$DEPLOY_RESULT")
+
+          if [ -z "$URL" ]; then
+            echo "❌ Could not parse preview URL from Firebase deploy output"
+            echo "$DEPLOY_RESULT"
+            exit 1
+          fi
+
+          echo "url=$URL" >> $GITHUB_OUTPUT
+
+      - name: 💬 Post or update PR comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const marker = '<!-- tracksuite-preview -->';
+            const existing = comments.find(c => c.body.includes(marker));
+            const body = `${marker}
+            ## 🔍 Preview Deployment
+
+            | | Status | URL |
+            |---|---|---|
+            | **Frontend** | ✅ Ready | [${{ steps.deploy.outputs.url }}](${{ steps.deploy.outputs.url }}) |
+            | **Backend** | Staging | \`${{ secrets.VITE_API_BASE }}\` |
+
+            > Commit \`${{ github.sha }}\` · ${new Date().toUTCString()}`;
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body
+              });
+            }
