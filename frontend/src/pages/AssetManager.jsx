@@ -31,11 +31,24 @@ const AssetManager = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-6xl mx-auto">
-        <header className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">TrackSuite Asset Manager</h1>
-          <p className="mt-2 text-sm text-gray-600">Manage and track your organization's assets efficiently.</p>
+    <div className="min-h-screen bg-gray-100 py-8 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+      {/* Background Logo Overlay */}
+      <div 
+        className="absolute inset-0 pointer-events-none opacity-5 flex items-center justify-center"
+        style={{
+          backgroundImage: 'url("/logo.png")',
+          backgroundRepeat: 'no-repeat',
+          backgroundPosition: 'center',
+          backgroundSize: 'contain',
+          zIndex: 0
+        }}
+      />
+
+      <div className="max-w-6xl mx-auto relative z-10">
+        <header className="mb-8 text-center">
+          <img src="/logo.png" alt="UM-Tech-TrackSuite Logo" className="h-24 mx-auto mb-4" />
+          <h1 className="text-4xl font-bold text-gray-900">UM-Tech-TrackSuite</h1>
+          <p className="mt-2 text-lg text-gray-600">Manage and track your organization's assets efficiently.</p>
         </header>
 
         <AddAssetForm onAssetAdded={handleAssetAdded} />
