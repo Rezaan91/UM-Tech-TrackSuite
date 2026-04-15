@@ -1,4 +1,4 @@
-# TrackSuite Asset Manager (Vertical Slice)
+# UM Tech TrackSuite "Asset Manager" (Vertical Slice)
 
 This project implements a small, vertical slice of an Asset Management system, focusing on the core functionalities of adding and viewing assets. It demonstrates a full-stack application with a React frontend, Node.js/Express backend, and SQLite database, designed for simplicity and ease of deployment.
 
@@ -16,7 +16,7 @@ This project implements a small, vertical slice of an Asset Management system, f
 ## Folder Structure
 
 ```
-tracksuite-asset-manager/
+um-tech-tracksuite/
 ├── backend/
 │   ├── models/
 │   │   └── db.js
